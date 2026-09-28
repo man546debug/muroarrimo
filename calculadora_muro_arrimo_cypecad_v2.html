@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calculadora de Muro de Arrimo – CYPECAD</title>
+<style>
+:root{
+  --bg:#f4f6f8; --card:#fff; --text:#1f2937; --muted:#64748b;
+  --accent:#1f6feb; --ok:#15803d; --warn:#b45309; --danger:#b91c1c;
+  --line:#d0d7de; --soft:#f8fafc;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+header{background:#17202a;color:white;padding:22px 18px}
+header h1{margin:0 0 6px;font-size:24px}
+header p{margin:0;color:#dbe4ee;line-height:1.45}
+main{max-width:1280px;margin:22px auto;padding:0 16px 40px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:0 1px 3px #00000010}
+.card h2{font-size:18px;margin:0 0 14px}
+.card h3{font-size:15px;margin:10px 0 8px}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fields3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}
+input,select{width:100%;padding:9px 10px;border:1px solid #b8c0cc;border-radius:8px;font-size:14px;background:#fff}
+small{display:block;color:var(--muted);margin-top:4px;line-height:1.35}
+button{border:0;border-radius:8px;padding:11px 15px;font-weight:700;cursor:pointer}
+.primary{background:var(--accent);color:white}
+.secondary{background:#e9eef5;color:#17202a}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+.results{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.result{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fafbfc}
+.result .k{font-size:12px;color:var(--muted)}
+.result .v{font-size:18px;font-weight:800;margin-top:3px}
+.note{font-size:13px;line-height:1.5;color:#475569;background:#f8fafc;border-left:4px solid #94a3b8;padding:10px 12px;margin-top:14px}
+.warn{border-left-color:#d97706;background:#fff7ed}
+.ok{border-left-color:#16a34a;background:#f0fdf4}
+.danger{border-left-color:#dc2626;background:#fef2f2}
+svg{width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border-bottom:1px solid var(--line);padding:9px 8px;text-align:left;vertical-align:top}
+th{background:#f8fafc}
+code{background:#eef2f7;padding:2px 5px;border-radius:5px}
+.full{grid-column:1/-1}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;background:#e8f0ff;color:#194fb3}
+.list{margin:0;padding-left:18px;line-height:1.55}
+@media (max-width:900px){.grid,.fields,.fields3,.results{grid-template-columns:1fr}}
+@media print{
+  body{background:white}
+  header{background:white;color:black;border-bottom:1px solid #000}
+  .actions{display:none}
+  .card{box-shadow:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Calculadora conceitual de Muro de Arrimo – cargas para CYPECAD</h1>
+  <p>Ferramenta de pré-dimensionamento para faixa tributária por pilar, empuxo ativo de Rankine, desenho esquemático com valores e presets de solo.<br>
+  Útil para gerar o carregamento horizontal do módulo de muro antes do lançamento no CYPECAD.</p>
+</header>
+
+<main>
+<div class="grid">
+  <section class="card">
+    <h2>1. Geometria do módulo</h2>
+    <div class="fields3">
+      <div><label>Altura contida H (m)</label><input id="H" type="number" step="0.01" value="3.50"></div>
+      <div><label>Espaçamento entre pilares s (m)</label><input id="s" type="number" step="0.01" value="2.00"></div>
+      <div><label>Altura da cinta intermediária z (m)</label><input id="zcinta" type="number" step="0.01" value="2.00"></div>
+      <div><label>Espessura do bloco (cm)</label><input id="bloco" type="number" step="1" value="20"></div>
+      <div><label>Pilar – largura paralela ao muro (cm)</label><input id="bp" type="number" step="1" value="20"></div>
+      <div><label>Pilar – profundidade no sentido do empuxo (cm)</label><input id="hp" type="number" step="1" value="45"></div>
+      <div><label>Viga superior (cm)</label><input id="vsup" type="text" value="20 x 30"></div>
+      <div><label>Viga intermediária (cm)</label><input id="vint" type="text" value="20 x 30"></div>
+      <div><label>Sapata / viga de fundação – largura (m)</label><input id="bfund" type="number" step="0.01" value="0.60"></div>
+    </div>
+    <div class="note ok">Modelo-base atual: bloco estrutural de 20 cm, pilares 20 × 45 cm, cinta a 2,00 m e sapata/viga de fundação com 0,60 m de largura.</div>
+  </section>
+
+  <section class="card">
+    <h2>2. Solo e ação lateral</h2>
+    <div class="fields3">
+      <div>
+        <label>Tipo de solo / condição</label>
+        <select id="soloPreset">
+          <option value="custom">Personalizado</option>
+          <option value="terra_vermelha_compactada" selected>Terra vermelha compactada (estimativa)</option>
+          <option value="areia_fofa">Areia fofa</option>
+          <option value="areia_compacta">Areia compacta</option>
+          <option value="argila_mole">Argila mole</option>
+          <option value="argila_rija">Argila rija</option>
+          <option value="aterro_compacto">Aterro compactado</option>
+          <option value="aterro_solto">Aterro solto</option>
+        </select>
+      </div>
+      <div><label>Peso específico γ (kN/m³)</label><input id="gamma" type="number" step="0.1" value="19.0"></div>
+      <div><label>Ângulo de atrito φ (graus)</label><input id="phi" type="number" step="0.1" value="28.0"></div>
+      <div><label>Sobrecarga q (kPa = kN/m²)</label><input id="q" type="number" step="0.1" value="9.81"></div>
+      <div><label>Coesão c (kPa)</label><input id="coesao" type="number" step="0.1" value="0"></div>
+      <div><label>Unidade auxiliar</label><select id="kamode"><option value="auto">Ka automático por Rankine</option><option value="manual">Ka informado manualmente</option></select></div>
+      <div><label>Ka manual</label><input id="kaman" type="number" step="0.001" value="0.50"></div>
+      <div><label>Observação do terreno</label><input id="soloObs" type="text" value="Trecho crítico sobre solo antigo, porém sem sondagem." /></div>
+    </div>
+    <div class="note" id="soloInfo"></div>
+  </section>
+
+  <section class="card full">
+    <h2>3. Resultados principais – 1 pilar / faixa tributária</h2>
+    <div class="results">
+      <div class="result"><div class="k">Coeficiente ativo Ka</div><div class="v" id="rKa">–</div></div>
+      <div class="result"><div class="k">Pressão horizontal no topo</div><div class="v" id="rPtop">–</div></div>
+      <div class="result"><div class="k">Pressão horizontal na base</div><div class="v" id="rPbase">–</div></div>
+      <div class="result"><div class="k">Carga linear no topo do pilar</div><div class="v" id="rWtop">–</div></div>
+      <div class="result"><div class="k">Carga linear na base do pilar</div><div class="v" id="rWbase">–</div></div>
+      <div class="result"><div class="k">Resultante horizontal por pilar</div><div class="v" id="rHres">–</div></div>
+      <div class="result"><div class="k">Momento característico na base</div><div class="v" id="rM">–</div></div>
+      <div class="result"><div class="k">Altura da resultante</div><div class="v" id="rY">–</div></div>
+      <div class="result"><div class="k">Conversão da resultante</div><div class="v" id="rTf">–</div></div>
+      <div class="result"><div class="k">γ·Ka</div><div class="v" id="rGKa">–</div></div>
+      <div class="result"><div class="k">Parcela solo na base</div><div class="v" id="rSoloBase">–</div></div>
+      <div class="result"><div class="k">Parcela sobrecarga</div><div class="v" id="rQbase">–</div></div>
+    </div>
+    <div class="note warn">
+      A ferramenta é de pré-dimensionamento. Ela <b>não substitui</b> sondagem, verificação de estabilidade global, checagem das brocas,
+      análise de água/drenagem, dimensionamento final de concreto armado, nem projeto geotécnico.
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>4. Dados prontos para lançar no CYPECAD</h2>
+    <table>
+      <tbody>
+        <tr><th>Altura carregada</th><td id="cH">–</td></tr>
+        <tr><th>Faixa tributária do pilar</th><td id="cS">–</td></tr>
+        <tr><th>Carga horizontal no topo</th><td id="cWtop">–</td></tr>
+        <tr><th>Carga horizontal na base</th><td id="cWbase">–</td></tr>
+        <tr><th>Resultante horizontal</th><td id="cR">–</td></tr>
+        <tr><th>Momento na base</th><td id="cM">–</td></tr>
+        <tr><th>Tipo de carregamento</th><td>Distribuição trapezoidal horizontal ao longo da altura do pilar</td></tr>
+      </tbody>
+    </table>
+    <div class="note ok">Em pilares internos, a faixa tributária costuma ser o espaçamento entre eixos. Em extremidades, revise a metade do painel adjacente conforme o arranjo real.</div>
+  </section>
+
+  <section class="card">
+    <h2>5. Recomendações sobre o tipo de solo</h2>
+    <div id="soilRecommendation" class="note"></div>
+    <h3>Leitura prática</h3>
+    <ul class="list">
+      <li><b>Terra vermelha compactada / solo antigo:</b> pode ser favorável, mas não dispensa sondagem no trecho crítico.</li>
+      <li><b>Aterro solto:</b> tende a aumentar deformações e incertezas; adote premissas mais conservadoras.</li>
+      <li><b>Argilas:</b> a coesão aparente pode existir, mas em pré-dimensionamento convém ser conservador e, muitas vezes, usar <code>c = 0</code>.</li>
+      <li><b>Água:</b> mesmo um bom solo fica crítico sem drenagem. Empuxo hidrostático pode governar.</li>
+    </ul>
+  </section>
+
+  <section class="card full">
+    <h2>6. Desenho esquemático com os valores atuais</h2>
+    <svg id="secaoSvg" viewBox="0 0 940 430" aria-label="Seção esquemática do muro">
+      <defs>
+        <marker id="arrowBlue" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#1f6feb"/></marker>
+        <marker id="arrowBlack" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#111827"/></marker>
+      </defs>
+      <rect x="0" y="0" width="940" height="430" fill="#ffffff"/>
+      <text x="20" y="28" font-size="20" font-weight="700">Módulo esquemático – vista lateral / seção transversal</text>
+      <text x="20" y="50" font-size="13" fill="#475569">Representação conceitual do trecho crítico do muro de arrimo</text>
+
+      <polygon id="soilShape" points="90,120 360,120 360,330 90,330" fill="#c68642" opacity="0.82"/>
+      <rect id="wallRect" x="360" y="120" width="40" height="210" fill="#d1d5db" stroke="#6b7280"/>
+      <rect id="pillarRect" x="400" y="120" width="36" height="210" fill="#c97a3d" stroke="#8a5528"/>
+      <rect id="beamMid" x="350" y="210" width="96" height="16" fill="#9ca3af" stroke="#6b7280"/>
+      <rect id="beamTop" x="350" y="112" width="96" height="16" fill="#9ca3af" stroke="#6b7280"/>
+      <rect id="foundation" x="338" y="330" width="122" height="24" fill="#9ca3af" stroke="#6b7280"/>
+
+      <line x1="500" y1="75" x2="500" y2="355" stroke="#111827" stroke-width="1.2" stroke-dasharray="5 4"/>
+      <line x1="430" y1="72" x2="570" y2="72" stroke="#111827" stroke-width="1.5" marker-start="url(#arrowBlack)" marker-end="url(#arrowBlack)"/>
+      <text id="tSpacing" x="456" y="64" font-size="14" font-weight="700"></text>
+      <text x="455" y="87" font-size="12" fill="#475569">módulo entre pilares</text>
+
+      <line x1="64" y1="120" x2="64" y2="330" stroke="#111827" stroke-width="1.5" marker-start="url(#arrowBlack)" marker-end="url(#arrowBlack)"/>
+      <text id="tHdim" x="15" y="230" font-size="16" font-weight="700"></text>
+      <text x="12" y="250" font-size="12" fill="#475569">altura de contenção</text>
+
+      <line x1="338" y1="375" x2="460" y2="375" stroke="#111827" stroke-width="1.5" marker-start="url(#arrowBlack)" marker-end="url(#arrowBlack)"/>
+      <text id="tBfund" x="372" y="370" font-size="14" font-weight="700"></text>
+      <text x="356" y="392" font-size="12" fill="#475569">largura da fundação</text>
+
+      <line id="lineZcinta" x1="300" y1="218" x2="350" y2="218" stroke="#111827" stroke-width="1.4" marker-end="url(#arrowBlack)"/>
+      <text id="tZcinta" x="166" y="223" font-size="14" font-weight="700"></text>
+      <text x="168" y="243" font-size="12" fill="#475569">cinta intermediária</text>
+
+      <line x1="520" y1="138" x2="575" y2="138" stroke="#111827" stroke-width="1.4" marker-end="url(#arrowBlack)"/>
+      <text id="tBloco" x="580" y="143" font-size="14" font-weight="700"></text>
+      <text x="580" y="160" font-size="12" fill="#475569">bloco estrutural</text>
+
+      <line x1="446" y1="170" x2="575" y2="170" stroke="#111827" stroke-width="1.4" marker-end="url(#arrowBlack)"/>
+      <text id="tPilar" x="580" y="176" font-size="14" font-weight="700"></text>
+      <text x="580" y="194" font-size="12" fill="#475569">pilar</text>
+
+      <text id="tVsup" x="580" y="110" font-size="14" font-weight="700"></text>
+      <text x="580" y="126" font-size="12" fill="#475569">viga superior</text>
+      <line x1="446" y1="117" x2="575" y2="117" stroke="#111827" stroke-width="1.4" marker-end="url(#arrowBlack)"/>
+
+      <text id="tVint" x="580" y="221" font-size="14" font-weight="700"></text>
+      <text x="580" y="237" font-size="12" fill="#475569">viga intermediária</text>
+      <line x1="446" y1="218" x2="575" y2="218" stroke="#111827" stroke-width="1.4" marker-end="url(#arrowBlack)"/>
+
+      <text id="tSoilName" x="95" y="140" font-size="14" font-weight="700" fill="#111827"></text>
+      <text id="tSoilProp1" x="95" y="160" font-size="13" fill="#111827"></text>
+      <text id="tSoilProp2" x="95" y="178" font-size="13" fill="#111827"></text>
+      <text id="tSoilProp3" x="95" y="196" font-size="13" fill="#111827"></text>
+
+      <line id="arr1" x1="450" y1="140" x2="498" y2="140" stroke="#1f6feb" stroke-width="3" marker-end="url(#arrowBlue)"/>
+      <line id="arr2" x1="450" y1="190" x2="525" y2="190" stroke="#1f6feb" stroke-width="3" marker-end="url(#arrowBlue)"/>
+      <line id="arr3" x1="450" y1="240" x2="548" y2="240" stroke="#1f6feb" stroke-width="3" marker-end="url(#arrowBlue)"/>
+      <line id="arr4" x1="450" y1="290" x2="575" y2="290" stroke="#1f6feb" stroke-width="3" marker-end="url(#arrowBlue)"/>
+
+      <text id="tWtopDraw" x="505" y="136" font-size="13" font-weight="700" fill="#1f6feb"></text>
+      <text id="tWbaseDraw" x="580" y="294" font-size="13" font-weight="700" fill="#1f6feb"></text>
+      <text x="500" y="314" font-size="12" fill="#475569">empuxo horizontal equivalente no pilar</text>
+
+      <text id="tObs" x="20" y="414" font-size="12" fill="#475569"></text>
+    </svg>
+    <div class="note">O desenho é conceitual e serve para conferência visual dos dados. As proporções não são rigorosamente executivas.</div>
+  </section>
+
+  <section class="card full">
+    <h2>7. Diagrama de carga horizontal no pilar</h2>
+    <svg id="diag" viewBox="0 0 620 360" aria-label="Diagrama de carga horizontal">
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#1f6feb"/></marker>
+      </defs>
+      <line x1="170" y1="45" x2="170" y2="315" stroke="#222" stroke-width="3"/>
+      <line x1="140" y1="315" x2="480" y2="315" stroke="#777" stroke-width="2"/>
+      <text x="95" y="35" font-size="15">TOPO</text>
+      <text x="82" y="338" font-size="15">BASE</text>
+      <polygon id="poly" points="" fill="#1f6feb22" stroke="#1f6feb" stroke-width="2"/>
+      <line id="topArrow" x1="170" y1="50" x2="220" y2="50" stroke="#1f6feb" stroke-width="3" marker-end="url(#arrow)"/>
+      <line id="baseArrow" x1="170" y1="310" x2="430" y2="310" stroke="#1f6feb" stroke-width="3" marker-end="url(#arrow)"/>
+      <text id="tTop" x="225" y="55" font-size="14"></text>
+      <text id="tBase" x="435" y="305" font-size="14"></text>
+      <text id="tH" x="25" y="185" font-size="15"></text>
+    </svg>
+  </section>
+
+  <section class="card full">
+    <h2>8. Memorial resumido das equações</h2>
+    <div id="memorial" style="line-height:1.68;font-size:14px"></div>
+  </section>
+</div>
+
+<div class="actions">
+  <button class="primary" onclick="calc()">Recalcular</button>
+  <button class="secondary" onclick="window.print()">Imprimir / salvar em PDF</button>
+</div>
+</main>
+
+<script>
+const g = id => document.getElementById(id);
+const n = id => parseFloat(g(id).value)||0;
+const fmt = (x,d=2) => Number(x).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+const SOILS = {
+  terra_vermelha_compactada:{name:'Terra vermelha compactada', gamma:19.0, phi:28.0, c:0, note:'Boa hipótese preliminar para solo antigo e relativamente firme, mas ainda exige sondagem.'},
+  areia_fofa:{name:'Areia fofa', gamma:17.0, phi:28.0, c:0, note:'Solo mais deformável; atenção para recalques e perda de confinamento.'},
+  areia_compacta:{name:'Areia compacta', gamma:19.0, phi:34.0, c:0, note:'Em geral fornece menor Ka, porém continua sensível à água e escavação.'},
+  argila_mole:{name:'Argila mole', gamma:17.0, phi:20.0, c:0, note:'Pré-dimensionamento deve ser conservador; evitar confiar em coesão aparente sem ensaio.'},
+  argila_rija:{name:'Argila rija', gamma:18.5, phi:24.0, c:0, note:'Pode ser estável em condição seca, mas a coesão não deve ser superestimada no pré-dimensionamento.'},
+  aterro_compacto:{name:'Aterro compactado', gamma:18.0, phi:26.0, c:0, note:'Boa execução é essencial; variação de compactação pode alterar muito o comportamento.'},
+  aterro_solto:{name:'Aterro solto', gamma:17.5, phi:20.0, c:0, note:'Condição mais desfavorável; recomendado premissas conservadoras e investigação de campo.'}
+};
+
+function applySoilPreset(){
+  const p = g('soloPreset').value;
+  if(p==='custom') return;
+  const s = SOILS[p];
+  g('gamma').value = s.gamma;
+  g('phi').value = s.phi;
+  g('coesao').value = s.c;
+  calc();
+}
+
+function calc(){
+  const H=n('H'), s=n('s'), gamma=n('gamma'), phi=n('phi'), q=n('q'), c=n('coesao');
+  const bloco=n('bloco'), bp=n('bp'), hp=n('hp'), bfund=n('bfund'), zcinta=n('zcinta');
+  const kamode=g('kamode').value;
+  const rad=phi*Math.PI/180;
+  const KaAuto=Math.pow(Math.tan(Math.PI/4-rad/2),2);
+  const Ka=kamode==='manual'?n('kaman'):KaAuto;
+  const presetKey = g('soloPreset').value;
+  const preset = SOILS[presetKey];
+  const soilLabel = preset ? preset.name : 'Solo personalizado';
+
+  const pTop=Math.max(0, Ka*q - 2*c*Math.sqrt(Ka));
+  const pBase=Math.max(0, Ka*(q+gamma*H) - 2*c*Math.sqrt(Ka));
+  const pSoilBase = Math.max(0, Ka*gamma*H);
+  const pQ = Math.max(0, Ka*q);
+
+  const wTop=pTop*s;
+  const wBase=pBase*s;
+  const R=(wTop+wBase)*H/2;
+
+  const wu=wTop;
+  const wt=Math.max(0,wBase-wTop);
+  const Ru=wu*H;
+  const Rt=wt*H/2;
+  const M=Ru*(H/2)+Rt*(H/3);
+  const y=R>0?M/R:0;
+
+  g('rKa').textContent=fmt(Ka,3);
+  g('rPtop').textContent=fmt(pTop)+' kPa';
+  g('rPbase').textContent=fmt(pBase)+' kPa';
+  g('rWtop').textContent=fmt(wTop)+' kN/m';
+  g('rWbase').textContent=fmt(wBase)+' kN/m';
+  g('rHres').textContent=fmt(R)+' kN';
+  g('rM').textContent=fmt(M)+' kN·m';
+  g('rY').textContent=fmt(y)+' m acima da base';
+  g('rTf').textContent=fmt(R/9.80665)+' tf';
+  g('rGKa').textContent=fmt(gamma*Ka)+' kN/m³';
+  g('rSoloBase').textContent=fmt(pSoilBase)+' kPa';
+  g('rQbase').textContent=fmt(pQ)+' kPa';
+
+  g('cH').textContent=fmt(H)+' m';
+  g('cS').textContent=fmt(s)+' m';
+  g('cWtop').textContent=fmt(wTop)+' kN/m';
+  g('cWbase').textContent=fmt(wBase)+' kN/m';
+  g('cR').textContent=fmt(R)+' kN';
+  g('cM').textContent=fmt(M)+' kN·m';
+
+  const soilPresetText = preset ? preset.note : 'Valores inseridos manualmente. Revise a compatibilidade com o solo real e com eventual sondagem.';
+  g('soloInfo').innerHTML = '<span class="badge">Solo atual</span> <b>'+soilLabel+'</b><br>'+
+    'γ = <b>'+fmt(gamma,1)+' kN/m³</b>, φ = <b>'+fmt(phi,1)+'°</b>, c = <b>'+fmt(c,1)+' kPa</b>, Ka = <b>'+fmt(Ka,3)+'</b>.<br>'+
+    soilPresetText;
+
+  const recClass = (presetKey==='aterro_solto' || presetKey==='argila_mole') ? 'danger' : (presetKey==='terra_vermelha_compactada' || presetKey==='areia_compacta' || presetKey==='argila_rija' ? 'ok' : 'warn');
+  g('soilRecommendation').className = 'note '+recClass;
+  g('soilRecommendation').innerHTML = '<b>Leitura do solo selecionado:</b> '+soilPresetText+'<br>'+
+    'Para este módulo, o valor de <b>Ka</b> adotado resulta em <b>'+fmt(wBase)+' kN/m</b> na base do pilar, considerando a faixa tributária de <b>'+fmt(s)+' m</b>.';
+
+  // Diagrama de carga
+  const xTop=170+Math.min(260, Math.max(20,wTop*3.1));
+  const xBase=170+Math.min(340, Math.max(40,wBase*3.1));
+  g('poly').setAttribute('points',`170,50 ${xTop},50 ${xBase},310 170,310`);
+  g('topArrow').setAttribute('x2',xTop);
+  g('baseArrow').setAttribute('x2',xBase);
+  g('tTop').setAttribute('x',Math.min(520,xTop+8));
+  g('tBase').setAttribute('x',Math.min(520,xBase+8));
+  g('tTop').textContent=fmt(wTop)+' kN/m';
+  g('tBase').textContent=fmt(wBase)+' kN/m';
+  g('tH').textContent='H = '+fmt(H)+' m';
+
+  // Desenho esquemático
+  g('tSpacing').textContent = 's = '+fmt(s)+' m';
+  g('tHdim').textContent = 'H = '+fmt(H)+' m';
+  g('tBfund').textContent = fmt(bfund)+' m';
+  g('tZcinta').textContent = 'z = '+fmt(zcinta)+' m';
+  g('tBloco').textContent = 'Bloco = '+fmt(bloco,0)+' cm';
+  g('tPilar').textContent = 'Pilar '+fmt(bp,0)+' × '+fmt(hp,0)+' cm';
+  g('tVsup').textContent = 'Viga sup. '+g('vsup').value;
+  g('tVint').textContent = 'Viga int. '+g('vint').value;
+  g('tSoilName').textContent = soilLabel;
+  g('tSoilProp1').textContent = 'γ = '+fmt(gamma,1)+' kN/m³';
+  g('tSoilProp2').textContent = 'φ = '+fmt(phi,1)+'°   |   Ka = '+fmt(Ka,3);
+  g('tSoilProp3').textContent = 'q = '+fmt(q,2)+' kPa';
+  g('tWtopDraw').textContent = fmt(wTop)+' kN/m';
+  g('tWbaseDraw').textContent = fmt(wBase)+' kN/m';
+  g('tObs').textContent = 'Observação: '+g('soloObs').value;
+
+  // Altura da cinta no desenho: base y=330 topo y=120
+  const yBase=330, yTopSec=120;
+  const yCinta = yBase - ((zcinta/H)*(yBase-yTopSec));
+  g('beamMid').setAttribute('y', (yCinta-8).toFixed(1));
+  g('lineZcinta').setAttribute('y1', yCinta.toFixed(1));
+  g('lineZcinta').setAttribute('y2', yCinta.toFixed(1));
+
+  // escala simples para setas de empuxo
+  const arrLens = [Math.max(30,wTop*2.4), Math.max(45,(wTop+(wBase-wTop)*0.33)*2.4), Math.max(60,(wTop+(wBase-wTop)*0.66)*2.4), Math.max(75,wBase*2.4)];
+  const ys = [140,190,240,290];
+  ['arr1','arr2','arr3','arr4'].forEach((id,i)=>{ g(id).setAttribute('x2', (450+Math.min(arrLens[i],170)).toFixed(1)); g(id).setAttribute('y1', ys[i]); g(id).setAttribute('y2', ys[i]); });
+
+  g('memorial').innerHTML = `
+    <b>Coeficiente de empuxo ativo de Rankine:</b><br>
+    Ka = tan²(45° − φ/2) = <b>${fmt(Ka,3)}</b> ${kamode==='manual' ? '(substituído por valor manual).' : '(calculado automaticamente).'}<br><br>
+
+    <b>Tensão horizontal simplificada:</b><br>
+    σ<sub>h</sub>(z) = Ka · (q + γ·z) − 2c√Ka, limitada a zero nesta versão conceitual.<br>
+    No topo: σ<sub>h,topo</sub> = <b>${fmt(pTop)} kPa</b>.<br>
+    Na base: σ<sub>h,base</sub> = <b>${fmt(pBase)} kPa</b>.<br>
+    Parcela de solo na base: <b>${fmt(pSoilBase)} kPa</b>.<br>
+    Parcela da sobrecarga: <b>${fmt(pQ)} kPa</b>.<br><br>
+
+    <b>Conversão para faixa tributária do pilar:</b><br>
+    Para s = <b>${fmt(s)} m</b>:<br>
+    w<sub>topo</sub> = σ<sub>h,topo</sub> · s = <b>${fmt(wTop)} kN/m</b><br>
+    w<sub>base</sub> = σ<sub>h,base</sub> · s = <b>${fmt(wBase)} kN/m</b><br><br>
+
+    <b>Resultante horizontal e momento:</b><br>
+    R = (w<sub>topo</sub> + w<sub>base</sub>) · H / 2 = <b>${fmt(R)} kN</b><br>
+    M<sub>base</sub> = (w<sub>topo</sub>·H)(H/2) + [(w<sub>base</sub>−w<sub>topo</sub>)·H/2](H/3) = <b>${fmt(M)} kN·m</b><br>
+    Altura da resultante: y = M / R = <b>${fmt(y)} m</b> acima da base.<br><br>
+
+    <b>Interpretação prática:</b><br>
+    Este módulo, com H = <b>${fmt(H)} m</b> e espaçamento entre pilares de <b>${fmt(s)} m</b>, deve ser lançado no CYPECAD com carregamento trapezoidal horizontal, indo de <b>${fmt(wTop)} kN/m</b> no topo até <b>${fmt(wBase)} kN/m</b> na base.
+  `;
+}
+
+['H','s','gamma','phi','q','coesao','kaman','kamode','bloco','bp','hp','bfund','zcinta','vsup','vint','soloObs'].forEach(id=>g(id).addEventListener('input',calc));
+g('soloPreset').addEventListener('change', applySoilPreset);
+calc();
+</script>
+</body>
+</html>
