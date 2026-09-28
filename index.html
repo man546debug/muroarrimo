@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calculadora de Muro de Arrimo – CYPECAD</title>
+<style>
+:root{
+  --bg:#f4f6f8; --card:#fff; --text:#1f2937; --muted:#64748b;
+  --accent:#1f6feb; --ok:#15803d; --warn:#b45309; --danger:#b91c1c;
+  --line:#d0d7de;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+header{background:#17202a;color:white;padding:22px 18px}
+header h1{margin:0 0 6px;font-size:24px}
+header p{margin:0;color:#dbe4ee}
+main{max-width:1180px;margin:22px auto;padding:0 16px 40px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:0 1px 3px #00000010}
+.card h2{font-size:18px;margin:0 0 14px}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}
+input,select{width:100%;padding:9px 10px;border:1px solid #b8c0cc;border-radius:8px;font-size:14px}
+small{display:block;color:var(--muted);margin-top:4px}
+button{border:0;border-radius:8px;padding:11px 15px;font-weight:700;cursor:pointer}
+.primary{background:var(--accent);color:white}
+.secondary{background:#e9eef5;color:#17202a}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+.results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.result{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fafbfc}
+.result .k{font-size:12px;color:var(--muted)}
+.result .v{font-size:19px;font-weight:800;margin-top:3px}
+.note{font-size:13px;line-height:1.45;color:#475569;background:#f8fafc;border-left:4px solid #94a3b8;padding:10px 12px;margin-top:14px}
+.warn{border-left-color:#d97706;background:#fff7ed}
+.ok{border-left-color:#16a34a;background:#f0fdf4}
+svg{width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border-bottom:1px solid var(--line);padding:9px 8px;text-align:left}
+th{background:#f8fafc}
+code{background:#eef2f7;padding:2px 5px;border-radius:5px}
+.full{grid-column:1/-1}
+@media (max-width:800px){.grid,.fields,.results{grid-template-columns:1fr}}
+@media print{
+  body{background:white}
+  header{background:white;color:black;border-bottom:1px solid #000}
+  .actions{display:none}
+  .card{box-shadow:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Calculadora conceitual de Muro de Arrimo – cargas para CYPECAD</h1>
+  <p>Empuxo ativo de Rankine, faixa tributária por pilar e diagrama trapezoidal.</p>
+</header>
+
+<main>
+<div class="grid">
+  <section class="card">
+    <h2>1. Geometria do muro</h2>
+    <div class="fields">
+      <div><label>Altura contida H (m)</label><input id="H" type="number" step="0.01" value="3.50"></div>
+      <div><label>Espaçamento entre pilares s (m)</label><input id="s" type="number" step="0.01" value="2.00"></div>
+      <div><label>Espessura do bloco (cm)</label><input id="bloco" type="number" step="1" value="20"></div>
+      <div><label>Altura da cinta intermediária (m)</label><input id="zcinta" type="number" step="0.01" value="2.00"></div>
+      <div><label>Pilar – dimensão paralela ao muro (cm)</label><input id="bp" type="number" step="1" value="20"></div>
+      <div><label>Pilar – dimensão no sentido do empuxo (cm)</label><input id="hp" type="number" step="1" value="45"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2. Solo e sobrecarga</h2>
+    <div class="fields">
+      <div><label>Peso específico γ (kN/m³)</label><input id="gamma" type="number" step="0.1" value="19.61"><small>≈ 2,00 tf/m³</small></div>
+      <div><label>Ângulo de atrito φ (graus)</label><input id="phi" type="number" step="0.1" value="19.47"><small>Esse valor produz Ka ≈ 0,50.</small></div>
+      <div><label>Sobrecarga q (kPa = kN/m²)</label><input id="q" type="number" step="0.1" value="9.81"><small>≈ 1,00 tf/m²</small></div>
+      <div><label>Ka</label>
+        <select id="kamode"><option value="auto">Calcular por Rankine</option><option value="manual">Inserir manualmente</option></select>
+      </div>
+      <div><label>Ka manual</label><input id="kaman" type="number" step="0.001" value="0.50"></div>
+      <div><label>Coesão c (kPa)</label><input id="coesao" type="number" step="0.1" value="0"><small>Para pré-dimensionamento conservador, normalmente usar 0.</small></div>
+    </div>
+  </section>
+
+  <section class="card full">
+    <h2>3. Resultados – 1 pilar / faixa tributária</h2>
+    <div class="results">
+      <div class="result"><div class="k">Coeficiente ativo Ka</div><div class="v" id="rKa">–</div></div>
+      <div class="result"><div class="k">Pressão no topo</div><div class="v" id="rPtop">–</div></div>
+      <div class="result"><div class="k">Pressão na base</div><div class="v" id="rPbase">–</div></div>
+      <div class="result"><div class="k">Carga linear no topo do pilar</div><div class="v" id="rWtop">–</div></div>
+      <div class="result"><div class="k">Carga linear na base do pilar</div><div class="v" id="rWbase">–</div></div>
+      <div class="result"><div class="k">Resultante horizontal por pilar</div><div class="v" id="rHres">–</div></div>
+      <div class="result"><div class="k">Momento característico na base</div><div class="v" id="rM">–</div></div>
+      <div class="result"><div class="k">Altura da resultante</div><div class="v" id="rY">–</div></div>
+      <div class="result"><div class="k">Conversão da resultante</div><div class="v" id="rTf">–</div></div>
+    </div>
+    <div class="note warn">
+      Ferramenta de pré-dimensionamento e conferência. O cálculo considera Rankine com aterro horizontal e parede vertical.
+      Não inclui automaticamente água, inclinação do terreno, atrito parede-solo, sismo, cargas concentradas, estabilidade global,
+      interação solo-estrutura ou dimensionamento das brocas.
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>4. Cargas para lançar no CYPECAD</h2>
+    <table>
+      <tbody>
+        <tr><th>Altura carregada</th><td id="cH">–</td></tr>
+        <tr><th>Faixa tributária</th><td id="cS">–</td></tr>
+        <tr><th>Carga horizontal no topo</th><td id="cWtop">–</td></tr>
+        <tr><th>Carga horizontal na base</th><td id="cWbase">–</td></tr>
+        <tr><th>Resultante horizontal</th><td id="cR">–</td></tr>
+        <tr><th>Momento na base</th><td id="cM">–</td></tr>
+      </tbody>
+    </table>
+    <div class="note ok">
+      Para um pilar interno, use a faixa tributária igual ao espaçamento entre pilares. Em pilares de extremidade,
+      a faixa tributária deve ser ajustada conforme a geometria real dos painéis adjacentes.
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>5. Diagrama de empuxo / carga no pilar</h2>
+    <svg id="diag" viewBox="0 0 620 360" aria-label="Diagrama de carga horizontal">
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 z" fill="#1f6feb"/>
+        </marker>
+      </defs>
+      <line x1="170" y1="45" x2="170" y2="315" stroke="#222" stroke-width="3"/>
+      <line x1="140" y1="315" x2="480" y2="315" stroke="#777" stroke-width="2"/>
+      <text x="95" y="35" font-size="15">TOPO</text>
+      <text x="82" y="338" font-size="15">BASE</text>
+      <polygon id="poly" points="" fill="#1f6feb22" stroke="#1f6feb" stroke-width="2"/>
+      <line id="topArrow" x1="170" y1="50" x2="220" y2="50" stroke="#1f6feb" stroke-width="3" marker-end="url(#arrow)"/>
+      <line id="baseArrow" x1="170" y1="310" x2="430" y2="310" stroke="#1f6feb" stroke-width="3" marker-end="url(#arrow)"/>
+      <text id="tTop" x="225" y="55" font-size="14"></text>
+      <text id="tBase" x="435" y="305" font-size="14"></text>
+      <text id="tH" x="25" y="185" font-size="15"></text>
+    </svg>
+  </section>
+
+  <section class="card full">
+    <h2>6. Memorial resumido das equações</h2>
+    <div id="memorial" style="line-height:1.65;font-size:14px"></div>
+  </section>
+</div>
+
+<div class="actions">
+  <button class="primary" onclick="calc()">Recalcular</button>
+  <button class="secondary" onclick="window.print()">Imprimir / salvar em PDF</button>
+</div>
+</main>
+
+<script>
+const g = id => document.getElementById(id);
+const n = id => parseFloat(g(id).value)||0;
+const fmt = (x,d=2) => Number(x).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+function calc(){
+  const H=n('H'), s=n('s'), gamma=n('gamma'), phi=n('phi'), q=n('q'), c=n('coesao');
+  const kamode=g('kamode').value;
+  const rad=phi*Math.PI/180;
+  const KaAuto=Math.pow(Math.tan(Math.PI/4-rad/2),2);
+  const Ka=kamode==='manual'?n('kaman'):KaAuto;
+
+  // Rankine com coesão opcional: sigma_h = Ka*sigma_v - 2c*sqrt(Ka)
+  // Não permitir pressão negativa na representação simplificada.
+  const pTop=Math.max(0, Ka*q - 2*c*Math.sqrt(Ka));
+  const pBase=Math.max(0, Ka*(q+gamma*H) - 2*c*Math.sqrt(Ka));
+
+  const wTop=pTop*s;
+  const wBase=pBase*s;
+
+  // Resultante da carga linear variando linearmente de wTop a wBase ao longo de H
+  const R=(wTop+wBase)*H/2;
+
+  // Momento na base: componente uniforme + triangular
+  const wu=wTop;
+  const wt=Math.max(0,wBase-wTop);
+  const Ru=wu*H;
+  const Rt=wt*H/2;
+  const M=Ru*(H/2)+Rt*(H/3);
+  const y=R>0?M/R:0;
+
+  g('rKa').textContent=fmt(Ka,3);
+  g('rPtop').textContent=fmt(pTop)+' kPa';
+  g('rPbase').textContent=fmt(pBase)+' kPa';
+  g('rWtop').textContent=fmt(wTop)+' kN/m';
+  g('rWbase').textContent=fmt(wBase)+' kN/m';
+  g('rHres').textContent=fmt(R)+' kN';
+  g('rM').textContent=fmt(M)+' kN·m';
+  g('rY').textContent=fmt(y)+' m acima da base';
+  g('rTf').textContent=fmt(R/9.80665)+' tf';
+
+  g('cH').textContent=fmt(H)+' m';
+  g('cS').textContent=fmt(s)+' m';
+  g('cWtop').textContent=fmt(wTop)+' kN/m';
+  g('cWbase').textContent=fmt(wBase)+' kN/m';
+  g('cR').textContent=fmt(R)+' kN';
+  g('cM').textContent=fmt(M)+' kN·m';
+
+  const xTop=170+Math.min(260, Math.max(20,wTop*3.1));
+  const xBase=170+Math.min(340, Math.max(40,wBase*3.1));
+  g('poly').setAttribute('points',`170,50 ${xTop},50 ${xBase},310 170,310`);
+  g('topArrow').setAttribute('x2',xTop);
+  g('baseArrow').setAttribute('x2',xBase);
+  g('tTop').setAttribute('x',Math.min(520,xTop+8));
+  g('tBase').setAttribute('x',Math.min(520,xBase+8));
+  g('tTop').textContent=fmt(wTop)+' kN/m';
+  g('tBase').textContent=fmt(wBase)+' kN/m';
+  g('tH').textContent='H = '+fmt(H)+' m';
+
+  g('memorial').innerHTML = `
+    <b>Coeficiente de empuxo ativo de Rankine:</b>
+    Ka = tan²(45° − φ/2) = <b>${fmt(Ka,3)}</b>.<br>
+    <b>Pressão horizontal:</b> σh(z) = Ka·(q + γ·z) − 2c√Ka, limitada a zero nesta versão simplificada.<br>
+    <b>Topo:</b> σh,topo = ${fmt(pTop)} kPa. <b>Base:</b> σh,base = ${fmt(pBase)} kPa.<br>
+    Para faixa tributária s = ${fmt(s)} m: wtopo = ${fmt(wTop)} kN/m e wbase = ${fmt(wBase)} kN/m.<br>
+    <b>Resultante:</b> R = (wtopo + wbase)·H/2 = <b>${fmt(R)} kN</b>.<br>
+    <b>Momento na base:</b> M = (wtopo·H)(H/2) + [(wbase−wtopo)·H/2](H/3)
+    = <b>${fmt(M)} kN·m</b>.<br>
+    <b>Posição da resultante:</b> y = M/R = <b>${fmt(y)} m</b> acima da base.
+  `;
+}
+['H','s','gamma','phi','q','coesao','kaman','kamode'].forEach(id=>g(id).addEventListener('input',calc));
+calc();
+</script>
+</body>
+</html>
